@@ -1,0 +1,110 @@
+# Verification Pipeline
+#
+# 4 layers of verification, each catching what the previous one can't:
+#
+# Layer 1: Build + Lint + Types    → catches syntax/type errors (seconds)
+# Layer 2: Unit Tests              → catches logic errors (seconds)
+# Layer 3: Invariant Tests         → catches property violations (seconds)
+# Layer 4: QA.tech E2E             → catches UX/behavioral issues (~5 min)
+
+name: Verification Pipeline
+
+on:
+  pull_request:
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Layer 1: Build + Lint + Types
+  # Always on. The baseline.
+  # ──────────────────────────────────────────────
+  layer-1-build:
+    name: "Layer 1: Build + Lint + Types"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+        name: Type check
+      - run: npm run lint
+        name: Lint
+      - run: npm run build
+        name: Build
+
+  # ──────────────────────────────────────────────
+  # Layer 2: Unit Tests
+  # Tests for specific features and logic.
+  # ──────────────────────────────────────────────
+  layer-2-unit-tests:
+    name: "Layer 2: Unit Tests"
+    runs-on: ubuntu-latest
+    needs: layer-1-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit
+        name: Run unit tests
+
+  # ──────────────────────────────────────────────
+  # Layer 3: Invariant Tests
+  # Property-based checks that must ALWAYS hold.
+  # ──────────────────────────────────────────────
+  layer-3-invariants:
+    name: "Layer 3: Invariant Tests"
+    runs-on: ubuntu-latest
+    needs: layer-1-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run test:invariants
+        name: Run invariant tests
+
+  # ──────────────────────────────────────────────
+  # Layer 4: QA.tech E2E Verification
+  # AI testing agent verifies the app in a real browser.
+  #
+  # WORKSHOP: This layer is disabled by default.
+  # Participants enable it in Task 3.
+  # ──────────────────────────────────────────────
+  # layer-4-e2e:
+  #   name: "Layer 4: QA.tech E2E"
+  #   runs-on: ubuntu-latest
+  #   needs: [layer-2-unit-tests, layer-3-invariants]
+  #   # Only run after Vercel preview is deployed
+  #   # The Vercel GitHub integration sets a deployment status
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Wait for Vercel preview
+  #       uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
+  #       id: vercel
+  #       with:
+  #         token: ${{ secrets.GITHUB_TOKEN }}
+  #         max_timeout: 300
+  #     - name: Install qatech CLI
+  #       run: npm install -g qatech
+  #     - name: Run QA.tech verification
+  #       env:
+  #         QATECH_API_KEY: ${{ secrets.QATECH_API_KEY }}
+  #       run: |
+  #         qatech chat --json --application-overrides \
+  #           '[{"applicationShortId":"${{ vars.QATECH_APP_ID }}","environment":{"url":"${{ steps.vercel.outputs.url }}"}}]' \
+  #           "You are verifying a PR for a bookstore e-commerce app. Test the following:
+  #            1. Browse products and add items to cart
+  #            2. Go to cart, verify totals are correct
+  #            3. Proceed to checkout, submit the form
+  #            4. Check that the confirmation page shows
+  #            Report any issues with: forms, validation, loading states, empty states, or broken interactions."
