@@ -12,7 +12,6 @@ import {
 
 const gatsby = products[0]; // The Great Gatsby, $12.99
 const nineteen84 = products[1]; // 1984, $11.99
-const mockingbird = products[2]; // To Kill a Mockingbird, $13.99
 
 describe("addItem", () => {
   it("adds a product to an empty cart", () => {
