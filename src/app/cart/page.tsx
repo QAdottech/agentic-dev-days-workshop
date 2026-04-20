@@ -5,9 +5,8 @@ import { useCart } from "../context/CartContext";
 import CartItemComponent from "../components/CartItem";
 
 export default function CartPage() {
-  const { items, getTotalPrice } = useCart();
+  const { items, totalPrice } = useCart();
 
-  // TODO: handle edge case for empty cart state
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <h1 className="mb-6 text-3xl font-bold text-gray-900">Your Cart</h1>
@@ -21,7 +20,7 @@ export default function CartPage() {
           <div>
             <p className="text-sm text-gray-500">Total</p>
             <p className="text-2xl font-bold text-gray-900">
-              ${getTotalPrice().toFixed(2)}
+              ${totalPrice.toFixed(2)}
             </p>
           </div>
           <Link

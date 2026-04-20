@@ -6,7 +6,7 @@ import { useCart } from "../context/CartContext";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getTotalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart } = useCart();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -123,7 +123,7 @@ export default function CheckoutPage() {
                   Total
                 </span>
                 <span className="text-lg font-bold text-gray-900">
-                  ${getTotalPrice().toFixed(2)}
+                  ${totalPrice.toFixed(2)}
                 </span>
               </div>
             </div>

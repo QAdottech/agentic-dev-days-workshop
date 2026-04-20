@@ -1,6 +1,6 @@
 "use client";
 
-import { CartItem as CartItemType } from "../context/CartContext";
+import { CartItem as CartItemType } from "../lib/cart";
 import { useCart } from "../context/CartContext";
 
 interface CartItemProps {

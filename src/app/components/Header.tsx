@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useCart } from "../context/CartContext";
 
 export default function Header() {
-  const { getTotalItems } = useCart();
-  const itemCount = getTotalItems();
+  const { totalItems } = useCart();
+  const itemCount = totalItems;
 
   return (
     <header className="border-b border-gray-200 bg-white">

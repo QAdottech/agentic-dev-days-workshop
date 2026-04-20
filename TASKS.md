@@ -2,192 +2,166 @@
 
 ## How this works
 
-You have a bookstore e-commerce app with a 4-layer verification pipeline:
+You have a bookstore app with a verification pipeline that gives your coding agent measurable feedback:
 
 ```
-Layer 1: Build + Lint + Types       → catches syntax/type errors
-Layer 2: Unit Tests (Vitest)        → catches logic errors
-Layer 3: Invariant Tests (Vitest)   → catches property violations
-Layer 4: QA.tech E2E                → catches UX/behavioral issues in a real browser
+Layer 1: Build + Lint + Types       → catches syntax/type errors        (seconds)
+Layer 2: Unit Tests                 → catches logic errors              (seconds)
+Layer 3: Invariant Tests            → catches property violations       (seconds)
+Layer 4: QA.tech PR Review          → catches UX/behavioral issues      (~5 min)
 ```
 
-Each task has two parts: **build** something with your coding agent, and **verify** it by adding tests to the pipeline. Use your coding agent for both parts.
+Business logic lives in `src/app/lib/` as pure functions. Tests import and verify the real code.
 
-Run tests locally before pushing: `npm test`
+Invariants are defined in `INVARIANTS.md`. Read it before you start.
 
 ---
 
-## Task 0: Smoke Test
+## Your workflow
 
-**Goal:** Verify your setup works end to end.
+1. Read the task and the invariants that must hold
+2. Direct your coding agent: "Implement this feature AND write tests that verify these invariants"
+3. Push, open a PR against your pair branch
+4. Watch the pipeline — did the invariants pass?
+5. If not, direct the agent to read the failure and fix it
+6. When code layers pass, comment `@qa.tech` on the PR for browser verification
 
-1. Create a branch: `git checkout -b pair-XX` (use your assigned number)
-2. Make a small change — fix the typo in the footer or update the shop name
-3. Push and open a PR against `main`
-4. Watch: Vercel deploys a preview, the pipeline runs Layers 1-3
-5. Verify: everything passes, preview URL works
-
-**Done when:** PR is open, pipeline is green, preview URL loads the app.
-
----
-
-## Task 1: Empty Cart State
-
-**Goal:** Experience unit tests as fast feedback for your coding agent.
-
-### Build
-
-The cart page is blank when empty — just a white page. Ask your coding agent:
-
-> "When the cart is empty, show a friendly message and a link back to the product list instead of a blank page."
-
-### Verify
-
-Add unit tests in `tests/unit/cart.test.ts`:
-
-```typescript
-// Hint: you'll need to test the component renders differently
-// when the cart is empty vs when it has items.
-// You can also ask your coding agent to write these tests.
-```
-
-Push, watch the pipeline. Layer 2 should validate your empty state works.
+Run tests locally first: `npm test`
 
 ---
 
-## Task 2: Discount Codes
+## Task 0: Understand the Environment (5 min)
 
-**Goal:** Experience invariant tests catching what unit tests miss.
+**Goal:** See what's already in place before changing anything.
 
-### Build
+1. Read `INVARIANTS.md` — these are the rules
+2. Look at `src/app/lib/cart.ts` — this is the business logic, pure functions
+3. Look at `tests/invariants/pricing.test.ts` — this is how invariants become tests
+4. Run `npm test` — see all 54 tests pass
+5. Create your branch: `git checkout -b pair-XX/setup` (use your pair number)
+6. Make a trivial change (update the shop name in Header.tsx)
+7. Push and open a PR against `pair-XX`
+8. Watch: Vercel deploys a preview, pipeline runs Layers 1-3
 
-Ask your coding agent:
-
-> "Add a discount code feature to the checkout page. The code SAVE10 gives 10% off and HALF gives 50% off. Show an input field where users can enter a code, with an 'Apply' button. Invalid codes should show an error. The order summary should show the subtotal, discount amount, and new total."
-
-### Verify — Unit tests
-
-Add to `tests/unit/discount.test.ts` (new file):
-
-```typescript
-import { describe, it, expect } from "vitest";
-
-// Test the discount calculation logic:
-// - SAVE10 applies 10% discount
-// - HALF applies 50% discount
-// - Invalid code returns an error
-// - Discount is calculated on the subtotal
-```
-
-### Verify — Invariant tests
-
-Add to `tests/invariants/pricing.test.ts`:
-
-```typescript
-// These invariants must hold regardless of what discount is applied:
-//
-// - Total is never negative (what if discount > subtotal?)
-// - Total equals subtotal minus discount amount (no rounding drift)
-// - Discount is never greater than subtotal
-// - Applying a discount to an empty cart doesn't break anything
-```
-
-Push, watch the pipeline. The invariant tests will likely catch edge cases your coding agent didn't handle — negative totals, empty cart with discount, rounding issues.
-
-**The lesson:** Unit tests check what you thought of. Invariants check what must always be true.
+**Done when:** PR is open, pipeline is green, preview URL loads.
 
 ---
 
-## Task 3: Form Validation + QA.tech
+## Task 1: Discount Codes (20 min)
 
-**Goal:** Enable Layer 4 and see what only a browser can catch.
+**Goal:** Implement a feature where the invariants are already defined for you.
 
-### Build
+### The invariants (from INVARIANTS.md)
 
-Ask your coding agent:
+Your implementation must satisfy:
 
-> "Add client-side validation to the checkout form. Email must be a valid email, name is required, card number must be exactly 16 digits. Show inline error messages next to each field. The submit button should be disabled while the form is submitting."
+| ID | Must be true |
+|----|-------------|
+| DISC-01 | Total with discount is never negative |
+| DISC-02 | Total with discount equals subtotal minus discount amount |
+| DISC-03 | Discount amount never exceeds subtotal |
+| DISC-04 | Invalid discount code produces an error, never a wrong total |
+| DISC-05 | Applying the same code twice has the same effect as once |
 
-### Verify — Invariant tests
+### Direct your coding agent
 
-Add to `tests/invariants/forms.test.ts` (new file):
+> "Add discount codes to the bookstore checkout. Create the discount logic in `src/app/lib/discount.ts` as pure functions. The codes are: SAVE10 (10% off) and HALF (50% off). Invalid codes should return an error.
+>
+> Add the UI to the checkout page: an input field for the code, an Apply button, and show the subtotal, discount amount, and new total in the order summary.
+>
+> Write invariant tests in `tests/invariants/discount.test.ts` that verify DISC-01 through DISC-05 from INVARIANTS.md. Import from `src/app/lib/discount.ts` and test the real functions.
+>
+> Run `npm test` to verify everything passes before committing."
 
-```typescript
-import { describe, it, expect } from "vitest";
+### What to watch for
 
-// Form invariants:
-// - Submitting with empty required fields does not proceed
-// - Invalid email format is rejected
-// - Card number validation accepts exactly 16 digits
-```
+- Does the agent handle the edge cases? (Discount on empty cart? SAVE10 on a $0 subtotal?)
+- Do the invariant tests actually test properties, or did the agent just test specific inputs?
+- If an invariant fails, direct the agent to read the test output and fix the implementation
 
-### Verify — Enable Layer 4
+### Push
 
-1. Open `.github/workflows/verify.yml`
-2. Uncomment the `layer-4-e2e` job
-3. Push
+Create a feature branch: `git checkout -b pair-XX/discount-codes`
 
-QA.tech will test your app in a real browser. It takes ~5 minutes. Move on to the discussion while it runs — the results will appear as a PR comment.
-
-**What QA.tech might find that your code-level tests can't:**
-- Error messages appear but aren't next to the right fields
-- The submit button disables but there's no visual loading indicator
-- Double-clicking submit before it disables sends the form twice
-- The form works on desktop but breaks on mobile
-
----
-
-## Task 4: Define Your Own Invariant (stretch)
-
-**Goal:** Pick a behavioral invariant and implement it.
-
-Choose one:
-
-### Option A: Destructive action confirmation
-> Every remove/delete action should require confirmation before executing.
-
-The "Remove" button on cart items currently just deletes immediately. Add a confirmation dialog and write an invariant test that verifies destructive actions always ask for confirmation.
-
-### Option B: Deep link integrity
-> Every meaningful page should work when accessed directly via URL.
-
-Write a test that verifies: if you navigate to `/cart` with items, share that URL, and open it fresh — the page renders correctly (even if the cart is empty in a new session, the page shouldn't break).
-
-### Option C: No placeholder text in production
-> User-facing text must never contain TODO, FIXME, Lorem ipsum, or placeholder content.
-
-Write an invariant test that scans the rendered output of key pages for placeholder text patterns. (Hint: there are already some TODOs in the codebase.)
+Open a PR against `pair-XX`. Watch the pipeline.
 
 ---
 
-## Reference: Running Tests Locally
+## Task 2: Form Validation (20 min)
+
+**Goal:** Define your OWN invariants before implementing.
+
+### Step 1: Define invariants
+
+Before writing any code, think: **what must always be true about checkout form validation?**
+
+Add your invariants to `INVARIANTS.md` under the "Form Validation" section. Examples to consider:
+
+- What happens when required fields are empty?
+- What happens with an invalid email format?
+- Can the form be submitted while already submitting?
+- What should happen to already-entered data when validation fails?
+
+### Step 2: Direct your coding agent
+
+> "Add client-side validation to the checkout form. Create validation logic in `src/app/lib/validation.ts` as pure functions. Name is required, email must be valid, card number must be exactly 16 digits.
+>
+> Add inline error messages to the checkout page that appear next to the relevant field.
+>
+> Write invariant tests in `tests/invariants/forms.test.ts` that verify the invariants I defined in INVARIANTS.md. Import from `src/app/lib/validation.ts` and test the real functions."
+
+### Step 3: Push and review
+
+Open a PR against `pair-XX`. The code-level invariants validate the logic.
+
+Then comment on the PR: `@qa.tech test the checkout form validation. Submit with empty fields, with invalid email, and with valid data.`
+
+**QA.tech will find things your code tests can't:** Are the error messages actually visible? Does the UX make sense? Is there a loading state?
+
+---
+
+## Task 3: Choose Your Own (stretch)
+
+Pick one and define the invariants yourself:
+
+### Option A: Quantity limits
+Add a maximum quantity per item (e.g., 10). Define invariants: quantity is always between 1 and max, UI prevents exceeding the limit, total reflects the capped quantity.
+
+### Option B: Cart persistence
+Persist the cart to localStorage. Define invariants: reloading the page preserves cart contents, clearing the cart clears storage, corrupted storage doesn't crash the app.
+
+### Option C: Order confirmation
+Show order details on the confirmation page. Define invariants: confirmation shows the correct items and total, order number is unique, navigating back doesn't re-submit.
+
+---
+
+## Reference: Test Commands
 
 ```bash
-npm test              # run all tests
-npm run test:unit     # run only unit tests
-npm run test:invariants  # run only invariant tests
-npm run test:watch    # watch mode — re-runs on changes
+npm test                  # run all tests
+npm run test:unit         # unit tests only
+npm run test:invariants   # invariant tests only
+npm run test:watch        # watch mode
 ```
 
-## Reference: Useful Invariant Patterns
+## Reference: Project Structure
 
-```typescript
-// Property: something is always true
-it("total is never negative", () => {
-  for (const scenario of scenarios) {
-    expect(calculate(scenario)).toBeGreaterThanOrEqual(0);
-  }
-});
+```
+src/app/
+  lib/
+    cart.ts               # cart logic (pure functions)
+    discount.ts           # you create this in Task 1
+    validation.ts         # you create this in Task 2
+  context/
+    CartContext.tsx        # React wrapper around lib/cart.ts
+  components/             # UI components
+  data/products.ts        # product catalog
 
-// Consistency: two things always agree
-it("displayed total equals computed total", () => {
-  expect(displayedTotal).toBeCloseTo(computedTotal);
-});
-
-// Boundary: edge cases don't break things
-it("works with zero items", () => { ... });
-it("works with maximum quantity", () => { ... });
-
-// Idempotency: doing it twice has the same effect as once
-it("applying the same discount twice doesn't stack", () => { ... });
+tests/
+  unit/cart.test.ts       # unit tests for cart functions
+  invariants/
+    pricing.test.ts       # PRICE-01 through PRICE-06
+    cart.test.ts          # CART-01 through CART-04
+    discount.test.ts      # you create this in Task 1
+    forms.test.ts         # you create this in Task 2
 ```

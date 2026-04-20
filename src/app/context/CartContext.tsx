@@ -2,19 +2,22 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 import { Product } from "../data/products";
-
-export interface CartItem {
-  product: Product;
-  quantity: number;
-}
+import {
+  CartItem,
+  addItem,
+  removeItem,
+  updateItemQuantity,
+  getTotalItems,
+  getTotalPrice,
+} from "../lib/cart";
 
 interface CartContextType {
   items: CartItem[];
   addToCart: (product: Product) => void;
   removeFromCart: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
-  getTotalItems: () => number;
-  getTotalPrice: () => number;
+  totalItems: number;
+  totalPrice: number;
   clearCart: () => void;
 }
 
@@ -24,45 +27,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const addToCart = (product: Product) => {
-    setItems((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prev, { product, quantity: 1 }];
-    });
+    setItems((prev) => addItem(prev, product));
   };
 
   const removeFromCart = (productId: number) => {
-    // TODO: handle edge case where item doesn't exist
-    setItems((prev) => prev.filter((item) => item.product.id !== productId));
+    setItems((prev) => removeItem(prev, productId));
   };
 
   const updateQuantity = (productId: number, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-    setItems((prev) =>
-      prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
-      )
-    );
-  };
-
-  const getTotalItems = () => {
-    return items.reduce((total, item) => total + item.quantity, 0);
-  };
-
-  const getTotalPrice = () => {
-    return items.reduce(
-      (total, item) => total + item.product.price * item.quantity,
-      0
-    );
+    setItems((prev) => updateItemQuantity(prev, productId, quantity));
   };
 
   const clearCart = () => {
@@ -76,8 +49,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         addToCart,
         removeFromCart,
         updateQuantity,
-        getTotalItems,
-        getTotalPrice,
+        totalItems: getTotalItems(items),
+        totalPrice: getTotalPrice(items),
         clearCart,
       }}
     >
