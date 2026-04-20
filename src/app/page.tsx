@@ -11,6 +11,13 @@ export default function Home() {
         <p className="mt-2 text-gray-600">
           Discover your next favorite read from our curated collection.
         </p>
+        <div className="mt-4">
+          <input
+            type="text"
+            placeholder="Search books..."
+            className="w-full max-w-md rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
+          />
+        </div>
       </div>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (
