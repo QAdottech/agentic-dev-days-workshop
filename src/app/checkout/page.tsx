@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "../context/CartContext";
+import { applyDiscount, DiscountResult } from "../lib/discount";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -12,10 +13,11 @@ export default function CheckoutPage() {
     email: "",
     cardNumber: "",
   });
+  const [discountCode, setDiscountCode] = useState("");
+  const [discount, setDiscount] = useState<DiscountResult | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // No validation — submitting empty fields just goes through
     clearCart();
     router.push("/checkout/confirmation");
   };
@@ -26,6 +28,13 @@ export default function CheckoutPage() {
       [e.target.name]: e.target.value,
     }));
   };
+
+  const handleApplyDiscount = () => {
+    const result = applyDiscount(totalPrice, discountCode);
+    setDiscount(result);
+  };
+
+  const finalTotal = discount?.valid ? discount.total : totalPrice;
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
@@ -118,14 +127,61 @@ export default function CheckoutPage() {
               ))}
             </div>
             <div className="mt-4 border-t border-gray-200 pt-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">
-                  Total
-                </span>
-                <span className="text-lg font-bold text-gray-900">
-                  ${totalPrice.toFixed(2)}
-                </span>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="font-medium text-gray-900">
+                    ${totalPrice.toFixed(2)}
+                  </span>
+                </div>
+                {discount?.valid && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-green-600">
+                      Discount ({discount.code})
+                    </span>
+                    <span className="font-medium text-green-600">
+                      -${discount.discountAmount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-900">
+                    Total
+                  </span>
+                  <span className="text-lg font-bold text-gray-900">
+                    ${finalTotal.toFixed(2)}
+                  </span>
+                </div>
               </div>
+            </div>
+            <div className="mt-4 border-t border-gray-200 pt-4">
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Discount Code
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={discountCode}
+                  onChange={(e) => setDiscountCode(e.target.value)}
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="Enter code"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyDiscount}
+                  className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                >
+                  Apply
+                </button>
+              </div>
+              {discount && !discount.valid && (
+                <p className="mt-1 text-sm text-red-600">{discount.error}</p>
+              )}
+              {discount?.valid && (
+                <p className="mt-1 text-sm text-green-600">
+                  {Math.round(discount.percentage * 100)}% discount applied!
+                </p>
+              )}
             </div>
           </div>
         </div>

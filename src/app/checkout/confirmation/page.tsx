@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 
 export default function ConfirmationPage() {
-  const orderNumber = Math.floor(Math.random() * 900000) + 100000;
+  const [orderNumber] = useState(
+    () => Math.floor(Math.random() * 900000) + 100000
+  );
 
   return (
     <div className="mx-auto flex max-w-lg flex-col items-center px-6 py-16 text-center">
