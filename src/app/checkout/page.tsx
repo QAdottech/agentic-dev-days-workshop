@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "../context/CartContext";
 import { applyDiscount, DiscountResult } from "../lib/discount";
+import { validateCheckoutForm, ValidationErrors } from "../lib/validation";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -13,20 +14,25 @@ export default function CheckoutPage() {
     email: "",
     cardNumber: "",
   });
+  const [errors, setErrors] = useState<ValidationErrors>({});
   const [discountCode, setDiscountCode] = useState("");
   const [discount, setDiscount] = useState<DiscountResult | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const result = validateCheckoutForm(formData);
+    setErrors(result.errors);
+    if (!result.valid) return;
     clearCart();
     router.push("/checkout/confirmation");
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name as keyof ValidationErrors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleApplyDiscount = () => {
@@ -59,9 +65,10 @@ export default function CheckoutPage() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 ${errors.name ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"}`}
                   placeholder="John Doe"
                 />
+                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
               </div>
               <div>
                 <label
@@ -76,9 +83,10 @@ export default function CheckoutPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 ${errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"}`}
                   placeholder="john@example.com"
                 />
+                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
               </div>
               <div>
                 <label
@@ -93,9 +101,10 @@ export default function CheckoutPage() {
                   name="cardNumber"
                   value={formData.cardNumber}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 ${errors.cardNumber ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"}`}
                   placeholder="4242 4242 4242 4242"
                 />
+                {errors.cardNumber && <p className="mt-1 text-sm text-red-600">{errors.cardNumber}</p>}
               </div>
             </div>
             <button
