@@ -57,10 +57,10 @@ _When you implement checkout validation, define your own invariants here. Exampl
 | ID | Invariant | Severity |
 |----|-----------|----------|
 | FORM-01 | Submitting with empty required fields never completes checkout | Critical |
-| FORM-02 | ? | ? |
-| FORM-03 | ? | ? |
-
-_Think about: What must always be true about form submission? About validation feedback? About error states?_
+| FORM-02 | A valid email must contain exactly one @ and at least one dot after it | Critical |
+| FORM-03 | Card number must be exactly 16 digits | Critical |
+| FORM-04 | Validation of one field does not clear or change other fields' values | Major |
+| FORM-05 | All validation errors are clearable by fixing the input | Major |
 
 **Test file:** `tests/invariants/forms.test.ts` _(you create this)_
 
